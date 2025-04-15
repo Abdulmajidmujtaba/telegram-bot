@@ -29,9 +29,9 @@ An AI-powered bot for creating summaries of messages in group chats using Telegr
 
 - `/start` - Start interacting with the bot
 - `/help` - Display help menu
-- `/summary` - Prepare a summary of the last 24h user messages (reply to a message)
-- `/proof` - Verify a statement for truthfulness (reply to a message)
+- `/summary` - Prepare a summary of the last 24h user messages
+- `/proof [statement]` - Verify a statement for truthfulness
 - `/comment` - Comment on the current discussion topic
-- `/gpt` - Answer a question using AI (reply to a message)
+- `/gpt [question]` - Answer a question using AI
 
-Commands marked with reply functionality should be sent as replies to user messages posted after the bot was added to the chat. 
+All commands can be used directly or as replies to messages. When used as replies, the bot will analyze the replied message content. 

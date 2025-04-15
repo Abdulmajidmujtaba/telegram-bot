@@ -64,16 +64,16 @@ class CommandHandlers:
             "➠ Between 20:00 - 22:00 (London Time) the bot will automatically publish "
             "a chat summary by analyzing the last 24 hours of messages using AI.\n"
             "➠ The bot cannot view messages posted before it was added to the chat.\n"
-            "➠ You can use manual commands in the chat (see below).\n\n"
+            "➠ You can use commands directly in the chat (see below).\n\n"
             "*Available Commands*\n"
             "/start - start interacting with the bot\n"
             "/help - display this menu\n\n"
             "*Group Chat Commands*\n"
-            "/summary - ↩️ prepare a summary of the last 24h user messages\n"
-            "/proof - ↩️ verify a statement for truthfulness\n"
+            "/summary - prepare a summary of the group's messages from the last 24h\n"
+            "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
             "/comment - comment on the current discussion topic\n"
-            "/gpt - ↩️ answer a question using AI\n\n"
-            "↩️ — commands should be sent as replies to user (not bot) messages posted after the bot was added to the chat"
+            "/gpt [question] - answer a question using AI (use as reply)\n\n"
+            "Note: The bot can only access messages sent after it was added to the chat."
         )
         
         await update.message.reply_text(help_text, parse_mode="Markdown")
@@ -82,16 +82,9 @@ class CommandHandlers:
         """
         Handles the /summary command.
         Generates and sends a summary of recent messages in the chat.
-        Requires the command to be sent as a reply to any message in the chat.
+        Works directly without requiring a reply to a message.
+        Summarizes messages for the whole group chat.
         """
-        # Check if this is a reply to a message
-        if not update.message.reply_to_message:
-            await update.message.reply_text(
-                "Please use this command as a reply to any message in the chat.",
-                reply_to_message_id=update.message.message_id
-            )
-            return
-            
         progress_message = await update.message.reply_text(
             "Generating summary... This might take a moment.",
             reply_to_message_id=update.message.message_id
@@ -113,7 +106,7 @@ class CommandHandlers:
             
             # Send summary
             await progress_message.edit_text(
-                f"📊 *Message Summary*\n\n{summary}",
+                f"📊 *Group Chat Summary*\n\n{summary}",
                 parse_mode="Markdown"
             )
             
@@ -124,19 +117,29 @@ class CommandHandlers:
     async def proof(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Handles the /proof command.
-        Verifies the truthfulness of the statement in the replied-to message using AI.
-        Requires the command to be sent as a reply to a user message.
+        Verifies the truthfulness of the statement provided in the command text.
+        If used as a reply to a message, verifies that message instead.
         """
+        statement = None
+        
         # Check if this is a reply to a message
-        if not update.message.reply_to_message or update.message.reply_to_message.from_user.is_bot:
+        if update.message.reply_to_message and not update.message.reply_to_message.from_user.is_bot:
+            statement = update.message.reply_to_message.text
+        else:
+            # Extract statement from command text: /proof This is a statement
+            command_parts = update.message.text.split(' ', 1)
+            if len(command_parts) > 1:
+                statement = command_parts[1].strip()
+        
+        if not statement:
             await update.message.reply_text(
-                "Please use this command as a reply to a user message containing a statement to verify.",
+                "Please provide a statement to verify. Examples:\n"
+                "1. Reply to a message with /proof\n"
+                "2. Type /proof followed by the statement to verify",
                 reply_to_message_id=update.message.message_id
             )
             return
             
-        statement = update.message.reply_to_message.text
-        
         progress_message = await update.message.reply_text(
             f"Verifying the statement: \"{statement}\"... This might take a moment.",
             reply_to_message_id=update.message.message_id
@@ -160,6 +163,7 @@ class CommandHandlers:
         """
         Handles the /comment command.
         Analyzes the recent discussion (last hour) and generates an AI comment.
+        Can be used directly without replying to a message.
         """
         progress_message = await update.message.reply_text(
             "Analyzing the discussion and generating a comment... This might take a moment.",
@@ -194,19 +198,29 @@ class CommandHandlers:
     async def gpt(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
         Handles the /gpt command.
-        Answers the question in the replied-to message using AI.
-        Requires the command to be sent as a reply to a user message.
+        Answers the question provided in the command text.
+        If used as a reply to a message, answers that message instead.
         """
+        question = None
+        
         # Check if this is a reply to a message
-        if not update.message.reply_to_message or update.message.reply_to_message.from_user.is_bot:
+        if update.message.reply_to_message and not update.message.reply_to_message.from_user.is_bot:
+            question = update.message.reply_to_message.text
+        else:
+            # Extract question from command text: /gpt What is the meaning of life?
+            command_parts = update.message.text.split(' ', 1)
+            if len(command_parts) > 1:
+                question = command_parts[1].strip()
+        
+        if not question:
             await update.message.reply_text(
-                "Please use this command as a reply to a user message containing a question to answer.",
+                "Please provide a question to answer. Examples:\n"
+                "1. Reply to a message with /gpt\n"
+                "2. Type /gpt followed by your question",
                 reply_to_message_id=update.message.message_id
             )
             return
             
-        question = update.message.reply_to_message.text
-        
         progress_message = await update.message.reply_text(
             f"Answering: \"{question}\"... This might take a moment.",
             reply_to_message_id=update.message.message_id

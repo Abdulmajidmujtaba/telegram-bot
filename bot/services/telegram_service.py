@@ -200,7 +200,7 @@ class TelegramService:
             "/start - start interacting with the bot\n"
             "/help - display this menu\n\n"
             "*Group Chat Commands*\n"
-            "/summary - ↩️ prepare a summary of the last 24h user messages\n"
+            "/summary - prepare a summary of the group's messages from the last 24h\n"
             "/proof - ↩️ verify a statement for truthfulness\n"
             "/comment - comment on the current discussion topic\n"
             "/gpt - ↩️ answer a question using AI\n\n"
@@ -214,16 +214,8 @@ class TelegramService:
         Handles the /summary command.
 
         Retrieves recent messages using `MessageService`, generates a summary using
-        `AIService`, and sends it back. Requires reply to a message.
+        `AIService`, and sends it back. Works directly without requiring a reply.
         """
-        # Check if this is a reply to a message
-        if not update.message.reply_to_message:
-            await update.message.reply_text(
-                "Please use this command as a reply to any message in the chat.",
-                reply_to_message_id=update.message.message_id
-            )
-            return
-            
         progress_message = await update.message.reply_text(
             "Generating summary... This might take a moment.",
             reply_to_message_id=update.message.message_id
@@ -245,7 +237,7 @@ class TelegramService:
             
             # Send summary
             await progress_message.edit_text(
-                f"📊 *Message Summary*\n\n{summary}",
+                f"📊 *Group Chat Summary*\n\n{summary}",
                 parse_mode="Markdown"
             )
             
