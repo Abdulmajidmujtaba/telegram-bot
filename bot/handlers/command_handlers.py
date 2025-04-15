@@ -6,6 +6,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from bot.services.ai_service import AIService
 from bot.services.message_service import MessageService
+from telegram.constants import ParseMode
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,8 @@ class CommandHandlers:
             "/summary - prepare a summary of the group's messages from the last 24h\n"
             "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
             "/comment - comment on the current discussion topic\n"
-            "/gpt [question] - answer a question using AI (use as reply)\n\n"
+            "/gpt [question] - answer a question using AI (use as reply)\n"
+            "/analyze - analyze an image or chart\n\n"
             "Note: The bot can only access messages sent after it was added to the chat."
         )
         
@@ -238,4 +240,52 @@ class CommandHandlers:
             
         except Exception as e:
             logger.error(f"Error answering question: {str(e)}")
-            await progress_message.edit_text("Sorry, I couldn't answer that question at this time.") 
+            await progress_message.edit_text("Sorry, I couldn't answer that question at this time.")
+    
+    async def analyze(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Handles the /analyze command for image/chart analysis.
+        Users can send a photo with the /analyze command as a caption, or reply to a photo with /analyze and instructions.
+        The bot will analyze the image using the user's instructions and return feedback (not financial advice).
+        """
+        user = update.effective_user.first_name if update.effective_user else "User"
+        message = update.message
+        photo = None
+        instructions = None
+
+        # Case 1: /analyze as a reply to a photo
+        if message.reply_to_message and message.reply_to_message.photo:
+            photo = message.reply_to_message.photo[-1]  # Get highest resolution
+            # Instructions from the /analyze command text
+            command_parts = message.text.split(' ', 1)
+            instructions = command_parts[1].strip() if len(command_parts) > 1 else "Analyze this chart."
+        # Case 2: /analyze sent as caption to a photo
+        elif message.photo:
+            photo = message.photo[-1]
+            instructions = message.caption or "Analyze this chart."
+        else:
+            await message.reply_text(
+                "Please send /analyze as a caption to a photo, or reply to a photo with /analyze and your instructions.",
+                reply_to_message_id=message.message_id
+            )
+            return
+
+        progress_message = await message.reply_text(
+            "Analyzing the image... This might take a moment.",
+            reply_to_message_id=message.message_id
+        )
+
+        try:
+            # Download the photo from Telegram
+            file = await context.bot.get_file(photo.file_id)
+            image_bytes = await file.download_as_bytearray()
+            # Analyze the image using AIService
+            analysis = await self.ai_service.analyze_image(bytes(image_bytes), instructions)
+            # Send the analysis result
+            await progress_message.edit_text(
+                f"🖼️ *Image Analysis*\n\n{analysis}\n\n_Disclaimer: This is not financial advice._",
+                parse_mode=ParseMode.MARKDOWN
+            )
+        except Exception as e:
+            logger.error(f"Error in /analyze: {str(e)}")
+            await progress_message.edit_text("Sorry, I couldn't analyze the image at this time.") 

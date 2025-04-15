@@ -193,4 +193,42 @@ class AIService:
             
         except Exception as e:
             logger.error(f"Error generating roast: {str(e)}")
-            return "Sorry, I couldn't roast that post at this time." 
+            return "Sorry, I couldn't roast that post at this time."
+    
+    @staticmethod
+    async def analyze_image(image_bytes: bytes, instructions: str) -> str:
+        """
+        Analyzes an image using OpenAI's GPT-4 Vision model, following user instructions.
+        Args:
+            image_bytes: The image file as bytes.
+            instructions: User's analysis instructions or strategy.
+        Returns:
+            A string containing the AI-generated analysis or an error message.
+        """
+        try:
+            # Upload image to OpenAI's vision API (using base64 encoding for bytes)
+            import base64
+            import io
+            image_b64 = base64.b64encode(image_bytes).decode('utf-8')
+            # Compose the prompt
+            prompt = (
+                f"Analyze the following chart or image according to these instructions: {instructions}\n"
+                "Provide feedback and insights, but do not give financial advice."
+            )
+            response = await client.chat.completions.create(
+                model=GPT_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are an expert assistant that analyzes images and charts according to user strategies. Never provide financial advice."},
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_b64}"}}
+                    ]}
+                ],
+                max_tokens=800,
+                temperature=0.5,
+                timeout=API_TIMEOUT
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"Error analyzing image: {str(e)}")
+            return "Sorry, I couldn't analyze the image at this time." 

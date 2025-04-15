@@ -105,11 +105,18 @@ class SummaryBot:
         self.application.add_handler(CommandHandler("proof", self.command_handlers.proof))
         self.application.add_handler(CommandHandler("comment", self.command_handlers.comment))
         self.application.add_handler(CommandHandler("gpt", self.command_handlers.gpt))
+        self.application.add_handler(CommandHandler("analyze", self.command_handlers.analyze))
         
         # Message handlers
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND, 
             self.message_handlers.handle_text_message
+        ))
+        
+        # Photo handler for /analyze as caption
+        self.application.add_handler(MessageHandler(
+            filters.PHOTO & filters.CaptionRegex(r"^/analyze"),
+            self.command_handlers.analyze
         ))
         
         # Chat member handlers
