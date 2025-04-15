@@ -58,26 +58,46 @@ class CommandHandlers:
         """
         Handles the /help command.
         Displays a detailed user guide including available commands and usage instructions.
+        In group chats, does not show the /start command.
         """
-        help_text = (
-            "🤖 *Bot User Guide* 🤖\n\n"
-            "➠ Add the bot to your group chat and grant it administrator rights.\n"
-            "➠ Between 20:00 - 22:00 (London Time) the bot will automatically publish "
-            "a chat summary by analyzing the last 24 hours of messages using AI.\n"
-            "➠ The bot cannot view messages posted before it was added to the chat.\n"
-            "➠ You can use commands directly in the chat (see below).\n\n"
-            "*Available Commands*\n"
-            "/start - start interacting with the bot\n"
-            "/help - display this menu\n\n"
-            "*Group Chat Commands*\n"
-            "/summary - prepare a summary of the group's messages from the last 24h\n"
-            "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
-            "/comment - comment on the current discussion topic\n"
-            "/gpt [question] - answer a question using AI (use as reply)\n"
-            "/analyze - analyze an image or chart\n\n"
-            "Note: The bot can only access messages sent after it was added to the chat."
-        )
-        
+        chat_type = update.effective_chat.type
+        if chat_type == "private":
+            help_text = (
+                "🤖 *Bot User Guide* 🤖\n\n"
+                "➠ Add the bot to your group chat and grant it administrator rights.\n"
+                "➠ Between 20:00 - 22:00 (London Time) the bot will automatically publish "
+                "a chat summary by analyzing the last 24 hours of messages using AI.\n"
+                "➠ The bot cannot view messages posted before it was added to the chat.\n"
+                "➠ You can use commands directly in the chat (see below).\n\n"
+                "*Available Commands*\n"
+                "/start - start interacting with the bot\n"
+                "/help - display this menu\n\n"
+                "*Group Chat Commands*\n"
+                "/summary - prepare a summary of the group's messages from the last 24h\n"
+                "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
+                "/comment - comment on the current discussion topic\n"
+                "/gpt [question] - answer a question using AI (use as reply)\n"
+                "/analyze - analyze an image or chart\n\n"
+                "Note: The bot can only access messages sent after it was added to the chat."
+            )
+        else:
+            help_text = (
+                "🤖 *Bot User Guide* 🤖\n\n"
+                "➠ Add the bot to your group chat and grant it administrator rights.\n"
+                "➠ Between 20:00 - 22:00 (London Time) the bot will automatically publish "
+                "a chat summary by analyzing the last 24 hours of messages using AI.\n"
+                "➠ The bot cannot view messages posted before it was added to the chat.\n"
+                "➠ You can use commands directly in the chat (see below).\n\n"
+                "*Available Commands*\n"
+                "/help - display this menu\n\n"
+                "*Group Chat Commands*\n"
+                "/summary - prepare a summary of the group's messages from the last 24h\n"
+                "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
+                "/comment - comment on the current discussion topic\n"
+                "/gpt [question] - answer a question using AI (use as reply)\n"
+                "/analyze - analyze an image or chart\n\n"
+                "Note: The bot can only access messages sent after it was added to the chat."
+            )
         await update.message.reply_text(help_text, parse_mode="Markdown")
     
     async def summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

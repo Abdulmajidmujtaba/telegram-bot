@@ -11,6 +11,7 @@ An AI-powered bot for creating summaries of messages in group chats using Telegr
 - 🗣️ **AI Commentary**: Comment on the current discussion in the chat.
 - 📚 **FAQ**: Provide information on frequently asked questions.
 - 🔥 **Post Roasting**: Leave entertaining comments on channel posts.
+- 📈 **Image/Chart Analysis**: Analyze uploaded images or charts using your personal strategy or instructions (no financial advice).
 
 ## Setup
 
@@ -33,5 +34,13 @@ An AI-powered bot for creating summaries of messages in group chats using Telegr
 - `/proof [statement]` - Verify a statement for truthfulness
 - `/comment` - Comment on the current discussion topic
 - `/gpt [question]` - Answer a question using AI
+- `/analyze` - Analyze an image or chart using your personal strategy/instructions (see below)
+
+### How to use `/analyze`
+
+- **Send a photo with `/analyze` as the caption and your strategy/instructions.**
+- **Or, reply to a photo with `/analyze [your instructions]`.**
+- The bot will analyze the image/chart and reply with feedback based on your instructions.
+- _Disclaimer: The analysis is for informational purposes only and is not financial advice._
 
 All commands can be used directly or as replies to messages. When used as replies, the bot will analyze the replied message content. 
