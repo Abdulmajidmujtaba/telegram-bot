@@ -137,23 +137,36 @@ class AIService:
             return "Sorry, I couldn't generate a comment at this time."
     
     @staticmethod
-    async def answer_question(question: str) -> str:
+    async def answer_question(question: str, context_messages: List[Dict[str, Any]] = None) -> str:
         """
         Answers a given question using the general-purpose GPT_MODEL.
         
         Args:
             question: The question string to be answered.
+            context_messages: Optional list of recent message dictionaries to provide context.
             
         Returns:
             A string containing the AI-generated answer, or an error message.
         """
         try:
+            messages = [
+                {"role": "system", "content": "You are a helpful, knowledgeable, accurate, and friendly assistant."}
+            ]
+            
+            # Add context messages if provided
+            if context_messages:
+                context = "Recent chat context:\n\n"
+                for msg in context_messages:
+                    context += f"{msg['user']}: {msg['text']}\n"
+                context += "\n"
+                messages.append({"role": "user", "content": context})
+            
+            # Add the question
+            messages.append({"role": "user", "content": question})
+            
             response = await client.chat.completions.create(
                 model=GPT_MODEL,
-                messages=[
-                    {"role": "system", "content": "You are a helpful, knowledgeable, accurate, and friendly assistant."},
-                    {"role": "user", "content": question}
-                ],
+                messages=messages,
                 max_tokens=1000,
                 temperature=0.7,
                 timeout=API_TIMEOUT

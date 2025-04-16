@@ -2,6 +2,8 @@
 import datetime
 from typing import Dict, Any, List, Optional
 from bot.config import SUMMARY_TIMEZONE
+import re
+from bot.utils.markdown_utils import markdownify, telegramify, standardize
 
 
 def format_timestamp(timestamp: float) -> str:
@@ -38,9 +40,9 @@ def truncate_text(text: str, max_length: int = 100) -> str:
 
 def escape_markdown(text: str) -> str:
     """
-    Escapes special Markdown V2 characters within a string.
+    Escapes special Markdown characters within a string for classic Markdown (not MarkdownV2).
 
-    Prepends a backslash (\) to characters like '_', '*', '[', etc., to prevent
+    Prepends a backslash (\\) to characters like '_', '*', '`', and '[' to prevent
     them from being interpreted as Markdown formatting.
     
     Args:
@@ -49,8 +51,27 @@ def escape_markdown(text: str) -> str:
     Returns:
         A string with special Markdown characters escaped.
     """
-    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    # List of all special characters that need to be escaped in classic Markdown
+    escape_chars = '_*`['
     return ''.join(f'\\{c}' if c in escape_chars else c for c in text)
+
+
+def escape_markdownv2(text: str) -> str:
+    """
+    Escapes raw text to be compatible with Telegram's MarkdownV2 format.
+    
+    Use this when you just need to escape plain text without any markdown 
+    formatting.
+    
+    Args:
+        text: The input text to escape.
+        
+    Returns:
+        Text with all special characters escaped for MarkdownV2.
+    """
+    # For raw text with no markdown formatting intended
+    special_chars = '_*[]()~`>#+-=|{}.!'
+    return ''.join(f'\\{c}' if c in special_chars else c for c in text)
 
 
 def format_message_for_summary(message: Dict[str, Any]) -> str:

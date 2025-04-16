@@ -7,7 +7,11 @@ from telegram.ext import ContextTypes
 from bot.services.ai_service import AIService
 from bot.services.message_service import MessageService
 from telegram.constants import ParseMode
-from bot.utils.helpers import escape_markdown
+from bot.utils.markdown_utils import markdownify, telegramify
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bot.main import SummaryBot
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +32,16 @@ class CommandHandlers:
         """
         self.ai_service = ai_service
         self.message_service = message_service
+        self.bot = None  # Will be set later
+    
+    def set_bot(self, bot: 'SummaryBot'):
+        """
+        Sets the bot instance for markdown formatting.
+        
+        Args:
+            bot: Instance of SummaryBot to access send_markdown_message
+        """
+        self.bot = bot
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -51,7 +65,11 @@ class CommandHandlers:
             "Type /help to see what I can do!"
         )
         
-        await update.message.reply_text(welcome_text, parse_mode="MarkdownV2")
+        if self.bot:
+            await self.bot.send_markdown_message(chat_id, welcome_text, context)
+        else:
+            formatted_text = markdownify(welcome_text)
+            await update.message.reply_text(formatted_text, parse_mode="MarkdownV2")
     
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -97,7 +115,11 @@ class CommandHandlers:
                 "/analyze - analyze an image or chart\n\n"
                 "Note: The bot can only access messages sent after it was added to the chat."
             )
-        await update.message.reply_text(help_text, parse_mode="MarkdownV2")
+        if self.bot:
+            await self.bot.send_markdown_message(update.effective_chat.id, help_text, context)
+        else:
+            formatted_text = markdownify(help_text)
+            await update.message.reply_text(formatted_text, parse_mode="MarkdownV2")
     
     async def summary(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -107,7 +129,7 @@ class CommandHandlers:
         Summarizes messages for the whole group chat.
         """
         progress_message = await update.message.reply_text(
-            "Generating summary... This might take a moment.",
+            markdownify("Generating summary... This might take a moment."),
             reply_to_message_id=update.message.message_id,
             parse_mode="MarkdownV2"
         )
@@ -120,21 +142,32 @@ class CommandHandlers:
             )
             
             if not messages:
-                await progress_message.edit_text("No recent messages found to summarize.", parse_mode="MarkdownV2")
+                await progress_message.edit_text(
+                    markdownify("No recent messages found to summarize."), 
+                    parse_mode="MarkdownV2"
+                )
                 return
                 
             # Generate summary
             summary = await self.ai_service.generate_summary(messages)
             
             # Send summary
-            await progress_message.edit_text(
-                f"📊 *Group Chat Summary*\n\n{escape_markdown(summary)}",
-                parse_mode="MarkdownV2"
-            )
+            summary_text = f"📊 Group Chat Summary\n\n{summary}"
+            if self.bot:
+                await self.bot.send_markdown_message(update.effective_chat.id, summary_text, context)
+                await progress_message.delete()
+            else:
+                await progress_message.edit_text(
+                    markdownify(summary_text),
+                    parse_mode="MarkdownV2"
+                )
             
         except Exception as e:
             logger.error(f"Error generating summary: {str(e)}")
-            await progress_message.edit_text("Sorry, I couldn't generate a summary at this time.", parse_mode="MarkdownV2")
+            await progress_message.edit_text(
+                markdownify("Sorry, I couldn't generate a summary at this time."), 
+                parse_mode="MarkdownV2"
+            )
     
     async def proof(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -155,16 +188,16 @@ class CommandHandlers:
         
         if not statement:
             await update.message.reply_text(
-                "Please provide a statement to verify. Examples:\n"
+                markdownify("Please provide a statement to verify. Examples:\n"
                 "1. Reply to a message with /proof\n"
-                "2. Type /proof followed by the statement to verify",
+                "2. Type /proof followed by the statement to verify"),
                 reply_to_message_id=update.message.message_id,
                 parse_mode="MarkdownV2"
             )
             return
             
         progress_message = await update.message.reply_text(
-            f"Verifying the statement: \"{statement}\"... This might take a moment.",
+            markdownify(f"Verifying the statement: \"{statement}\"... This might take a moment."),
             reply_to_message_id=update.message.message_id,
             parse_mode="MarkdownV2"
         )
@@ -174,14 +207,22 @@ class CommandHandlers:
             result = await self.ai_service.verify_statement(statement)
             
             # Send verification result
-            await progress_message.edit_text(
-                f"✅ *Fact Check*\n\nStatement: \"{escape_markdown(statement)}\"\n\n{escape_markdown(result)}",
-                parse_mode="MarkdownV2"
-            )
+            fact_check_text = f"✅ Fact Check\n\nStatement: \"{statement}\"\n\n{result}"
+            if self.bot:
+                await self.bot.send_markdown_message(update.effective_chat.id, fact_check_text, context)
+                await progress_message.delete()
+            else:
+                await progress_message.edit_text(
+                    markdownify(fact_check_text),
+                    parse_mode="MarkdownV2"
+                )
             
         except Exception as e:
             logger.error(f"Error verifying statement: {str(e)}")
-            await progress_message.edit_text("Sorry, I couldn't verify that statement at this time.", parse_mode="MarkdownV2")
+            await progress_message.edit_text(
+                markdownify("Sorry, I couldn't verify that statement at this time."),
+                parse_mode="MarkdownV2"
+            )
     
     async def comment(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -190,7 +231,7 @@ class CommandHandlers:
         Can be used directly without replying to a message.
         """
         progress_message = await update.message.reply_text(
-            "Analyzing the discussion and generating a comment... This might take a moment.",
+            markdownify("Analyzing the discussion and generating a comment... This might take a moment."),
             reply_to_message_id=update.message.message_id,
             parse_mode="MarkdownV2"
         )
@@ -204,21 +245,32 @@ class CommandHandlers:
             )
             
             if not messages:
-                await progress_message.edit_text("I don't see any recent messages to comment on.", parse_mode="MarkdownV2")
+                await progress_message.edit_text(
+                    markdownify("I don't see any recent messages to comment on."), 
+                    parse_mode="MarkdownV2"
+                )
                 return
                 
             # Generate comment
             comment = await self.ai_service.generate_comment(messages)
             
             # Send comment
-            await progress_message.edit_text(
-                f"💬 *AI Commentary*\n\n{escape_markdown(comment)}",
-                parse_mode="MarkdownV2"
-            )
+            comment_text = f"💬 AI Commentary\n\n{comment}"
+            if self.bot:
+                await self.bot.send_markdown_message(update.effective_chat.id, comment_text, context)
+                await progress_message.delete()
+            else:
+                await progress_message.edit_text(
+                    markdownify(comment_text),
+                    parse_mode="MarkdownV2"
+                )
             
         except Exception as e:
             logger.error(f"Error generating comment: {str(e)}")
-            await progress_message.edit_text("Sorry, I couldn't generate a comment at this time.", parse_mode="MarkdownV2")
+            await progress_message.edit_text(
+                markdownify("Sorry, I couldn't generate a comment at this time."), 
+                parse_mode="MarkdownV2"
+            )
     
     async def gpt(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -239,80 +291,111 @@ class CommandHandlers:
         
         if not question:
             await update.message.reply_text(
-                "Please provide a question to answer. Examples:\n"
+                markdownify("Please provide a question to answer. Examples:\n"
                 "1. Reply to a message with /gpt\n"
-                "2. Type /gpt followed by your question",
+                "2. Type /gpt followed by your question"),
                 reply_to_message_id=update.message.message_id,
                 parse_mode="MarkdownV2"
             )
             return
             
         progress_message = await update.message.reply_text(
-            f"Answering: \"{question}\"... This might take a moment.",
+            markdownify(f"Thinking about: \"{question}\"... This might take a moment."),
             reply_to_message_id=update.message.message_id,
             parse_mode="MarkdownV2"
         )
         
         try:
-            # Answer question
-            answer = await self.ai_service.answer_question(question)
+            # Get recent messages for context
+            messages = await self.message_service.get_recent_messages(
+                update.effective_chat, 
+                context,
+                hours=1  # Get messages from the last hour for context
+            )
+            
+            # Generate answer
+            answer = await self.ai_service.answer_question(question, messages)
             
             # Send answer
-            await progress_message.edit_text(
-                f"🤖 *AI Response*\n\nQuestion: \"{escape_markdown(question)}\"\n\n{escape_markdown(answer)}",
-                parse_mode="MarkdownV2"
-            )
+            response_text = f"🤖 AI Response\n\nQuestion: \"{question}\"\n\n{answer}"
+            if self.bot:
+                await self.bot.send_markdown_message(update.effective_chat.id, response_text, context)
+                await progress_message.delete()
+            else:
+                await progress_message.edit_text(
+                    markdownify(response_text),
+                    parse_mode="MarkdownV2"
+                )
             
         except Exception as e:
             logger.error(f"Error answering question: {str(e)}")
-            await progress_message.edit_text("Sorry, I couldn't answer that question at this time.", parse_mode="MarkdownV2")
+            await progress_message.edit_text(
+                markdownify("Sorry, I couldn't answer that question at this time."),
+                parse_mode="MarkdownV2"
+            )
     
     async def analyze(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
-        Handles the /analyze command for image/chart analysis.
-        Users can send a photo with the /analyze command as a caption, or reply to a photo with /analyze and instructions.
-        The bot will analyze the image using the user's instructions and return feedback (not financial advice).
+        Handles the /analyze command for analyzing images or charts.
+        Can be used as a reply to an image or with an image caption.
         """
-        user = update.effective_user.first_name if update.effective_user else "User"
-        message = update.message
-        photo = None
-        instructions = None
-
-        # Case 1: /analyze as a reply to a photo
-        if message.reply_to_message and message.reply_to_message.photo:
-            photo = message.reply_to_message.photo[-1]  # Get highest resolution
-            # Instructions from the /analyze command text
-            command_parts = message.text.split(' ', 1)
-            instructions = command_parts[1].strip() if len(command_parts) > 1 else "Analyze this chart."
-        # Case 2: /analyze sent as caption to a photo
-        elif message.photo:
-            photo = message.photo[-1]
-            instructions = message.caption or "Analyze this chart."
-        else:
-            await message.reply_text(
-                "Please send /analyze as a caption to a photo, or reply to a photo with /analyze and your instructions.",
-                reply_to_message_id=message.message_id,
+        if not update.message.photo and not update.message.reply_to_message:
+            await update.message.reply_text(
+                markdownify("Please attach an image to analyze or reply to an image with /analyze"),
+                reply_to_message_id=update.message.message_id,
                 parse_mode="MarkdownV2"
             )
             return
-
-        progress_message = await message.reply_text(
-            "Analyzing the image... This might take a moment.",
-            reply_to_message_id=message.message_id,
+            
+        # Get the photo to analyze
+        target_message = update.message if update.message.photo else update.message.reply_to_message
+        if not target_message.photo:
+            await update.message.reply_text(
+                markdownify("I can only analyze images. Please send an image or reply to an image."),
+                reply_to_message_id=update.message.message_id,
+                parse_mode="MarkdownV2"
+            )
+            return
+            
+        progress_message = await update.message.reply_text(
+            markdownify("Analyzing the image... This might take a moment."),
+            reply_to_message_id=update.message.message_id,
             parse_mode="MarkdownV2"
         )
-
+        
         try:
-            # Download the photo from Telegram
+            # Get the file
+            photo = target_message.photo[-1]  # Get highest resolution
             file = await context.bot.get_file(photo.file_id)
-            image_bytes = await file.download_as_bytearray()
-            # Analyze the image using AIService
-            analysis = await self.ai_service.analyze_image(bytes(image_bytes), instructions)
+            file_bytes = await file.download_as_bytearray()
+            
+            # Get the caption/command text if any
+            caption = ""
+            if update.message.caption:
+                parts = update.message.caption.split(' ', 1)
+                if len(parts) > 1:
+                    caption = parts[1].strip()
+            elif update.message.text:
+                parts = update.message.text.split(' ', 1)
+                if len(parts) > 1:
+                    caption = parts[1].strip()
+                    
+            # Analyze the image
+            analysis = await self.ai_service.analyze_image(file_bytes, caption)
+            
             # Send the analysis result
-            await progress_message.edit_text(
-                f"🖼️ *Image Analysis*\n\n{escape_markdown(analysis)}\n\n_Disclaimer: This is not financial advice._",
-                parse_mode=ParseMode.MARKDOWN_V2
-            )
+            analysis_text = f"🖼️ Image Analysis\n\n{analysis}\n\n_Disclaimer: This is not financial advice._"
+            if self.bot:
+                await self.bot.send_markdown_message(update.effective_chat.id, analysis_text, context)
+                await progress_message.delete()
+            else:
+                await progress_message.edit_text(
+                    markdownify(analysis_text),
+                    parse_mode="MarkdownV2"
+                )
         except Exception as e:
             logger.error(f"Error in /analyze: {str(e)}")
-            await progress_message.edit_text("Sorry, I couldn't analyze the image at this time.", parse_mode="MarkdownV2") 
+            await progress_message.edit_text(
+                markdownify("Sorry, I couldn't analyze the image at this time."),
+                parse_mode="MarkdownV2"
+            ) 

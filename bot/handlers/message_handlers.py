@@ -5,6 +5,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 from bot.services.message_service import MessageService
+from bot.utils.markdown_utils import markdownify
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,16 @@ class MessageHandlers:
             message_service: Instance of MessageService for storing message history.
         """
         self.message_service = message_service
+        self.bot = None  # Will be set later
+    
+    def set_bot(self, bot):
+        """
+        Sets the bot instance for markdown formatting.
+        
+        Args:
+            bot: Instance of SummaryBot to access send_markdown_message
+        """
+        self.bot = bot
     
     async def handle_text_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -79,7 +90,13 @@ class MessageHandlers:
                     "Type /help to see what I can do!"
                 )
                 
-                await update.message.reply_text(welcome_text, parse_mode="MarkdownV2")
+                if self.bot:
+                    await self.bot.send_markdown_message(chat_id, welcome_text, context)
+                else:
+                    await update.message.reply_text(
+                        markdownify(welcome_text),
+                        parse_mode="MarkdownV2"
+                    )
                 return
     
     async def handle_left_chat_member(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

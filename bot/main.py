@@ -28,6 +28,8 @@ from bot.services.message_service import MessageService
 from bot.handlers.command_handlers import CommandHandlers
 from bot.handlers.message_handlers import MessageHandlers
 from bot.config import SUMMARY_TIMEZONE, SUMMARY_START_HOUR, SUMMARY_END_HOUR
+from bot.utils.helpers import escape_markdown
+from bot.utils.markdown_utils import markdownify, telegramify, standardize
 
 # Configure logging
 logging.basicConfig(
@@ -72,6 +74,10 @@ class SummaryBot:
         # Initialize handlers
         self.command_handlers = CommandHandlers(self.ai_service, self.message_service)
         self.message_handlers = MessageHandlers(self.message_service)
+        
+        # Set bot instance in handlers
+        self.command_handlers.set_bot(self)
+        self.message_handlers.set_bot(self)
     
     async def setup_commands(self):
         """
@@ -85,7 +91,8 @@ class SummaryBot:
             BotCommand("summary", "Summarize the last 24h of messages"),
             BotCommand("proof", "Verify a statement for truthfulness"),
             BotCommand("comment", "Comment on the current discussion"),
-            BotCommand("gpt", "Answer a question using AI")
+            BotCommand("gpt", "Answer a question using AI"),
+            BotCommand("analyze", "Analyze an image or chart")
         ]
         
         await self.application.bot.set_my_commands(commands)
@@ -146,6 +153,48 @@ class SummaryBot:
             first=0
         )
     
+    async def send_markdown_message(self, chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE):
+        """
+        Sends a message with proper Markdown formatting using MarkdownV2.
+        
+        This method handles:
+        - Converting raw markdown to Telegram's MarkdownV2 format
+        - Splitting long messages automatically if needed
+        - Handling code blocks and other special formatting
+        
+        Args:
+            chat_id: The ID of the chat to send the message to
+            text: Raw markdown text to format and send
+            context: The telegram context
+        """
+        try:
+            # For normal-sized messages, use markdownify
+            if len(text) < 3000:
+                formatted_text = markdownify(text)
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=formatted_text,
+                    parse_mode="MarkdownV2"
+                )
+            else:
+                # For longer messages, use telegramify which will split into chunks
+                chunks = telegramify(text)
+                for chunk in chunks:
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=chunk,
+                        parse_mode="MarkdownV2"
+                    )
+                    # Add a small delay between messages to avoid rate limiting
+                    await asyncio.sleep(0.5)
+        except Exception as e:
+            logger.error(f"Error sending markdown message: {str(e)}")
+            # Fallback to plain text if markdown fails
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="Sorry, I couldn't format the message properly. Here's the plain text:\n\n" + text
+            )
+    
     async def send_scheduled_summaries(self, context: ContextTypes.DEFAULT_TYPE):
         """
         Sends daily summaries to active chats during the configured time window.
@@ -179,18 +228,19 @@ class SummaryBot:
                         # Generate summary
                         summary = await self.ai_service.generate_summary(messages)
                         
-                        # Send summary
-                        await context.bot.send_message(
-                            chat_id=chat_id,
-                            text=f"\ud83d\udcc5 *Daily Summary ({now.strftime('%Y-%m-%d')})*\n\n{summary}",
-                            parse_mode="MarkdownV2"
-                        )
+                        # Send summary using MarkdownV2
+                        summary_text = f"📅 Daily Summary ({now.strftime('%Y-%m-%d')})\n\n{summary}"
+                        await self.send_markdown_message(chat_id, summary_text, context)
                         
                         # Update last summary time
                         context.bot_data[f'last_summary_{chat_id}'] = now
                         
                 except Exception as e:
                     logger.error(f"Error sending scheduled summary to chat {chat_id}: {str(e)}")
+                    await context.bot.send_message(
+                        chat_id=chat_id, 
+                        text="Sorry, I couldn't generate a summary at this time."
+                    )
     
     async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """
@@ -200,6 +250,14 @@ class SummaryBot:
         Telegram application.
         """
         logger.error(f"Update {update} caused error: {context.error}")
+        if update and update.message:
+            error_text = "Sorry, an error occurred. Please try again later."
+            try:
+                formatted_text = markdownify(error_text)
+                await update.message.reply_text(formatted_text, parse_mode="MarkdownV2")
+            except Exception:
+                # Fallback to plain text if markdown formatting fails
+                await update.message.reply_text(error_text)
 
 
 async def main():

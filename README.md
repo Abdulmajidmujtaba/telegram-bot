@@ -1,6 +1,6 @@
 # Telegram Summary Bot
 
-An AI-powered Telegram bot that summarizes group chat discussions, answers questions, fact-checks statements, provides AI commentary, and analyzes images or charts using OpenAI models (including GPT-4 Vision).
+An AI-powered Telegram bot that summarizes group chat discussions, answers questions, fact-checks statements, provides AI commentary, and analyzes images or charts using OpenAI models (including GPT-4 Vision). Now with enhanced Markdown formatting!
 
 ## Features
 
@@ -12,6 +12,7 @@ An AI-powered Telegram bot that summarizes group chat discussions, answers quest
 - **AI Commentary**: Get insightful or witty comments on ongoing discussions.
 - **Image/Chart Analysis**: Analyze uploaded images or charts with your custom instructions (no financial advice).
 - **Post Roasting**: Entertaining, light-hearted comments on posts.
+- **Rich Text Formatting**: Supports Telegram's MarkdownV2 format for beautiful, well-structured messages with bold, italic, underline, code blocks, tables, and more.
 
 ## Setup
 
@@ -91,4 +92,15 @@ OPENAI_API_KEY=your-openai-api-key
 - Logging output is printed to the console for monitoring and debugging.
 
 ## License
-MIT License 
+MIT License
+
+## Markdown Formatting
+
+The bot uses the `telegramify-markdown` library to support rich text formatting in all its messages. This allows for:
+
+- **Text styling**: Bold, italic, underline, strikethrough, code, and more
+- **Structured content**: Headings, lists, tables, block quotes
+- **Special elements**: Code blocks with syntax highlighting, LaTeX math expressions, spoilers
+- **Combined formatting**: Mix and match different styles
+
+For more details, see the [Markdown Guide](docs/markdown_guide.md). 
