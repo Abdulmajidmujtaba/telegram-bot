@@ -21,6 +21,9 @@ SUMMARY_MODEL = "gpt-4.1-mini"
 PROOF_MODEL = "gpt-4.1"
 COMMENT_MODEL = "gpt-4.1-nano"
 
+# AI response settings
+CONCISE_RESPONSES = True  # Set to True for brief AI responses, False for more detailed responses
+
 # Message history settings
 MAX_MESSAGE_HISTORY = 2000
 SUMMARY_HOURS = 24

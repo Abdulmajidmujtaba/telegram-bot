@@ -7,7 +7,7 @@ and creating comments using various OpenAI models.
 import logging
 from typing import List, Dict, Any
 from openai import AsyncOpenAI
-from bot.config import OPENAI_API_KEY, SUMMARY_MODEL, GPT_MODEL, PROOF_MODEL, COMMENT_MODEL
+from bot.config import OPENAI_API_KEY, SUMMARY_MODEL, GPT_MODEL, PROOF_MODEL, COMMENT_MODEL, CONCISE_RESPONSES
 
 # Configure OpenAI client
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 # Define a timeout for API calls
 API_TIMEOUT = 30  # seconds
+
+# Global setting for concise responses
+# CONCISE_RESPONSES = True  # Now imported from config
 
 class AIService:
     """
@@ -47,10 +50,14 @@ class AIService:
             for msg in messages:
                 prompt += f"{msg['user']}: {msg['text']}\n"
             
+            system_content = "You are an assistant that creates concise and informative summaries of chat conversations."
+            if CONCISE_RESPONSES:
+                system_content += " Always provide extremely brief and concise responses, focusing only on the most essential information."
+            
             response = await client.chat.completions.create(
                 model=SUMMARY_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are an assistant that creates concise and informative summaries of chat conversations."},
+                    {"role": "system", "content": system_content},
                     {"role": "user", "content": prompt}
                 ],
                 max_tokens=800,
@@ -77,11 +84,14 @@ class AIService:
             potentially including evidence, or an error message.
         """
         try:
+            system_content = "You are a factual assistant that verifies statements. Analyze the statement, determine its factuality, and provide evidence."
+            if CONCISE_RESPONSES:
+                system_content += " Be extremely concise and to the point. Focus on key facts only."
+            
             response = await client.chat.completions.create(
                 model=PROOF_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are a factual assistant that verifies statements. "
-                                                  "Analyze the statement, determine its factuality, and provide evidence."},
+                    {"role": "system", "content": system_content},
                     {"role": "user", "content": f"Please verify this statement: \"{statement}\""}
                 ],
                 max_tokens=1000,
@@ -119,10 +129,14 @@ class AIService:
             
             context += "\nBased on these messages, provide an insightful comment about the discussion."
             
+            system_content = "You are a witty and insightful assistant that provides comments on ongoing discussions."
+            if CONCISE_RESPONSES:
+                system_content += " Keep your comments extremely brief and to the point."
+            
             response = await client.chat.completions.create(
                 model=COMMENT_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are a witty and insightful assistant that provides comments on ongoing discussions."},
+                    {"role": "system", "content": system_content},
                     {"role": "user", "content": context}
                 ],
                 max_tokens=400,
@@ -149,8 +163,12 @@ class AIService:
             A string containing the AI-generated answer, or an error message.
         """
         try:
+            system_content = "You are a helpful, knowledgeable, accurate, and friendly assistant."
+            if CONCISE_RESPONSES:
+                system_content += " Always provide extremely brief and concise answers. Use as few words as possible while remaining clear and helpful."
+            
             messages = [
-                {"role": "system", "content": "You are a helpful, knowledgeable, accurate, and friendly assistant."}
+                {"role": "system", "content": system_content}
             ]
             
             # Add context messages if provided
@@ -190,11 +208,14 @@ class AIService:
             A string containing the AI-generated roast, or an error message.
         """
         try:
+            system_content = "You are a witty assistant that creates clever, slightly sarcastic, but ultimately good-natured roasts of posts. Keep it light and funny, not mean-spirited."
+            if CONCISE_RESPONSES:
+                system_content += " Make your roasts very brief and punchy - one or two sentences maximum."
+            
             response = await client.chat.completions.create(
                 model=COMMENT_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are a witty assistant that creates clever, slightly sarcastic, "
-                                                  "but ultimately good-natured roasts of posts. Keep it light and funny, not mean-spirited."},
+                    {"role": "system", "content": system_content},
                     {"role": "user", "content": f"Please roast this post in a funny way: \"{post_text}\""}
                 ],
                 max_tokens=200,
@@ -228,10 +249,15 @@ class AIService:
                 f"Analyze the following chart or image according to these instructions: {instructions}\n"
                 "Provide feedback and insights, but do not give financial advice."
             )
+            
+            system_content = "You are an expert assistant that analyzes images and charts according to user strategies. Never provide financial advice."
+            if CONCISE_RESPONSES:
+                system_content += " Provide extremely concise analysis. Focus only on the most important insights using minimal words."
+            
             response = await client.chat.completions.create(
                 model=GPT_MODEL,
                 messages=[
-                    {"role": "system", "content": "You are an expert assistant that analyzes images and charts according to user strategies. Never provide financial advice."},
+                    {"role": "system", "content": system_content},
                     {"role": "user", "content": [
                         {"type": "text", "text": prompt},
                         {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_b64}"}}
