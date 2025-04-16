@@ -22,7 +22,7 @@ class MessageHandlers:
         Initializes the message handlers with the message service.
         
         Args:
-            message_service: An instance of MessageService for storing message history.
+            message_service: Instance of MessageService for storing message history.
         """
         self.message_service = message_service
     
@@ -79,7 +79,7 @@ class MessageHandlers:
                     "Type /help to see what I can do!"
                 )
                 
-                await update.message.reply_text(welcome_text)
+                await update.message.reply_text(welcome_text, parse_mode="MarkdownV2")
                 return
     
     async def handle_left_chat_member(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

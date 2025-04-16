@@ -49,9 +49,7 @@ class MessageService:
             # Calculate the cutoff time
             cutoff_time = datetime.datetime.now() - datetime.timedelta(hours=hours)
             
-            # In a real implementation, you would use Telegram's getHistory method
-            # or a similar approach to retrieve messages.
-            # For now, we'll access the bot's message history that it has seen
+            #Access the bot's message history that it has seen
             # stored in the context.chat_data dictionary
             
             if not context.chat_data.get('message_history'):

@@ -182,8 +182,8 @@ class SummaryBot:
                         # Send summary
                         await context.bot.send_message(
                             chat_id=chat_id,
-                            text=f"📅 *Daily Summary ({now.strftime('%Y-%m-%d')})*\n\n{summary}",
-                            parse_mode="Markdown"
+                            text=f"\ud83d\udcc5 *Daily Summary ({now.strftime('%Y-%m-%d')})*\n\n{summary}",
+                            parse_mode="MarkdownV2"
                         )
                         
                         # Update last summary time
