@@ -60,10 +60,10 @@ class SummaryBot:
         builder = Application.builder().token(TELEGRAM_BOT_TOKEN)
         
         # Set connection and read timeouts for bot requests
-        builder.connect_timeout(20)   # 20 seconds for connection
-        builder.read_timeout(30)      # 30 seconds for read
-        builder.write_timeout(30)     # 30 seconds for write
-        builder.pool_timeout(30)      # 30 seconds for connection pool
+        builder.connect_timeout(60)   # 60 seconds for connection
+        builder.read_timeout(60)      # 60 seconds for read
+        builder.write_timeout(60)     # 60 seconds for write
+        builder.pool_timeout(60)      # 60 seconds for connection pool
         
         self.application = builder.build()
         
@@ -287,13 +287,13 @@ async def main():
         bot.application.updater.bootstrap_retries = 5
         # Start polling with shorter polling interval and graceful shutdown
         await bot.application.updater.start_polling(
-            poll_interval=1.0,  # Check for updates every second
-            timeout=10,         # Timeout for long polling
-            bootstrap_retries=5,  # Number of retries if bootstrapping fails
-            read_timeout=10,    # Read timeout for getting updates
-            write_timeout=10,   # Write timeout for webhook
-            connect_timeout=10, # Connection timeout
-            pool_timeout=10     # Pool timeout
+            poll_interval=2.0,  # Check for updates every 2 seconds
+            timeout=30,         # Timeout for long polling
+            bootstrap_retries=10,  # Number of retries if bootstrapping fails
+            read_timeout=30,    # Read timeout for getting updates
+            write_timeout=30,   # Write timeout for webhook
+            connect_timeout=30, # Connection timeout
+            pool_timeout=30     # Pool timeout
         )
         
         logger.info("Bot started successfully!")
