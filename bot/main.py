@@ -92,7 +92,8 @@ class SummaryBot:
             BotCommand("proof", "Verify a statement for truthfulness"),
             BotCommand("comment", "Comment on the current discussion"),
             BotCommand("gpt", "Answer a question using AI"),
-            BotCommand("analyze", "Analyze an image or chart")
+            BotCommand("analyze", "Analyze an image or chart"),
+            BotCommand("reset", "Reset image analysis conversation")
         ]
         
         await self.application.bot.set_my_commands(commands)
@@ -113,6 +114,7 @@ class SummaryBot:
         self.application.add_handler(CommandHandler("comment", self.command_handlers.comment))
         self.application.add_handler(CommandHandler("gpt", self.command_handlers.gpt))
         self.application.add_handler(CommandHandler("analyze", self.command_handlers.analyze))
+        self.application.add_handler(CommandHandler("reset", self.command_handlers.reset))
         
         # Message handlers
         self.application.add_handler(MessageHandler(

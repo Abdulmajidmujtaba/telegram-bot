@@ -16,10 +16,18 @@ SUMMARY_START_HOUR = 20
 SUMMARY_END_HOUR = 22
 
 # OpenAI model settings
-GPT_MODEL = "gpt-4.1"
+GPT_MODEL = "o3"
 SUMMARY_MODEL = "gpt-4.1-mini"
 PROOF_MODEL = "gpt-4.1"
 COMMENT_MODEL = "gpt-4.1-nano"
+
+# Image analysis settings
+IMAGE_ANALYSIS_MODEL = os.getenv("IMAGE_ANALYSIS_MODEL", GPT_MODEL)
+IMAGE_ANALYSIS_REASONING_EFFORT = os.getenv("IMAGE_ANALYSIS_REASONING_EFFORT", "medium")
+IMAGE_ANALYSIS_TOOLS = []
+IMAGE_ANALYSIS_INCLUDE_FIELDS = ["reasoning.encrypted_content", "web_search_call.action.sources"]
+IMAGE_ANALYSIS_STORE_RESPONSES = False
+IMAGE_ANALYSIS_TEXT_FORMAT = {"type": "text"}
 
 # AI response settings
 CONCISE_RESPONSES = True  # Set to True for brief AI responses, False for more detailed responses

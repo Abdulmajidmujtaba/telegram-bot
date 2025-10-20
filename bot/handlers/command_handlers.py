@@ -94,7 +94,8 @@ class CommandHandlers:
                 "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
                 "/comment - comment on the current discussion topic\n"
                 "/gpt [question] - answer a question using AI (use as reply)\n"
-                "/analyze - analyze an image or chart\n\n"
+                "/analyze - analyze an image or chart\n"
+                "/reset - reset the ongoing image analysis conversation\n\n"
                 "Note: The bot can only access messages sent after it was added to the chat."
             )
         else:
@@ -112,7 +113,8 @@ class CommandHandlers:
                 "/proof [statement] - verify a statement for truthfulness (use as reply)\n"
                 "/comment - comment on the current discussion topic\n"
                 "/gpt [question] - answer a question using AI (use as reply)\n"
-                "/analyze - analyze an image or chart\n\n"
+                "/analyze - analyze an image or chart\n"
+                "/reset - reset the ongoing image analysis conversation\n\n"
                 "Note: The bot can only access messages sent after it was added to the chat."
             )
         if self.bot:
@@ -379,9 +381,17 @@ class CommandHandlers:
                 parts = update.message.text.split(' ', 1)
                 if len(parts) > 1:
                     caption = parts[1].strip()
+            elif target_message.caption:
+                caption = target_message.caption.strip()
+
+            user_id = update.effective_user.id if update.effective_user else None
+            conversation_id = self.ai_service.build_image_conversation_id(
+                update.effective_chat.id,
+                user_id
+            )
                     
             # Analyze the image
-            analysis = await self.ai_service.analyze_image(file_bytes, caption)
+            analysis = await self.ai_service.analyze_image(file_bytes, caption, conversation_id)
             
             # Send the analysis result
             analysis_text = f"🖼️ Image Analysis\n\n{analysis}\n\n_Disclaimer: This is not financial advice._"
@@ -398,4 +408,25 @@ class CommandHandlers:
             await progress_message.edit_text(
                 markdownify("Sorry, I couldn't analyze the image at this time."),
                 parse_mode="MarkdownV2"
-            ) 
+            )
+
+    async def reset(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Handles the /reset command to clear a user's image analysis conversation history.
+        """
+        user_id = update.effective_user.id if update.effective_user else None
+        conversation_id = self.ai_service.build_image_conversation_id(
+            update.effective_chat.id,
+            user_id
+        )
+
+        await self.ai_service.reset_image_conversation(conversation_id)
+
+        confirmation_text = "Image analysis conversation history cleared."
+        if self.bot:
+            await self.bot.send_markdown_message(update.effective_chat.id, confirmation_text, context)
+        else:
+            await update.message.reply_text(
+                markdownify(confirmation_text),
+                parse_mode="MarkdownV2"
+            )
